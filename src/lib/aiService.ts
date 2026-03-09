@@ -53,13 +53,19 @@ export async function streamChat({
 }: StreamChatParams) {
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
+  // Truncate document to avoid memory limit in edge function
+  let trimmedText = documentText;
+  if (trimmedText.length > MAX_TEXT_LENGTH) {
+    trimmedText = trimmedText.slice(0, MAX_TEXT_LENGTH) + "\n\n[Document truncated]";
+  }
+
   const resp = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages, documentText, documentName }),
+    body: JSON.stringify({ messages, documentText: trimmedText, documentName }),
   });
 
   if (!resp.ok) {
