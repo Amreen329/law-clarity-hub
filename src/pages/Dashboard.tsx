@@ -4,12 +4,12 @@ import DocumentUpload from "@/components/DocumentUpload";
 import AnalysisProgress from "@/components/AnalysisProgress";
 import AnalysisResults from "@/components/AnalysisResults";
 import ChatInterface from "@/components/ChatInterface";
-import { stages } from "@/components/AnalysisProgress";
 import { extractTextFromFile } from "@/lib/documentParser";
-import { generateMockAnalysis } from "@/lib/mockAnalysis";
+import { analyzeDocument } from "@/lib/aiService";
 import type { DocumentAnalysis, Language } from "@/lib/analysisTypes";
 import { FileText, Clock, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 interface AnalyzedDoc {
   name: string;
@@ -28,38 +28,34 @@ const Dashboard = () => {
   const [language, setLanguage] = useState<Language>("en");
   const [history, setHistory] = useState<AnalyzedDoc[]>([]);
 
-  const simulateProgress = useCallback(() => {
-    let p = 0;
-    let stageIdx = 0;
-    const interval = setInterval(() => {
-      p += Math.random() * 15 + 5;
-      if (p > 100) p = 100;
-      stageIdx = Math.min(Math.floor((p / 100) * stages.length), stages.length - 1);
-      setProgress(p);
-      setStage(stages[stageIdx]);
-      if (p >= 100) clearInterval(interval);
-    }, 600);
-    return interval;
-  }, []);
-
   const handleFileSelect = async (file: File) => {
     setIsAnalyzing(true);
     setProgress(0);
-    setStage(stages[0]);
+    setStage("Extracting text from document...");
     setCurrentAnalysis(null);
 
-    const interval = simulateProgress();
-
     try {
+      // Step 1: Extract text
+      setProgress(10);
+      setStage("Extracting text from document...");
       const text = await extractTextFromFile(file);
       setCurrentDocText(text);
 
-      // Wait for progress to finish
-      await new Promise((resolve) => setTimeout(resolve, 4500));
-      clearInterval(interval);
-      setProgress(100);
+      if (!text.trim()) {
+        throw new Error("Could not extract any text from this document. Please try a different file.");
+      }
 
-      const analysis = generateMockAnalysis(file.name);
+      // Step 2: Send to AI
+      setProgress(25);
+      setStage("Sending document to AI for analysis...");
+
+      const { analysis } = await analyzeDocument(text, file.name, (s, p) => {
+        setStage(s);
+        setProgress(p);
+      });
+
+      setProgress(100);
+      setStage("Analysis complete!");
       setCurrentAnalysis(analysis);
       setCurrentDocName(file.name);
 
@@ -67,9 +63,11 @@ const Dashboard = () => {
         { name: file.name, date: new Date().toLocaleDateString(), analysis, text },
         ...prev,
       ]);
-    } catch (err) {
+
+      toast.success("Document analyzed successfully!");
+    } catch (err: any) {
       console.error("Error processing file:", err);
-      clearInterval(interval);
+      toast.error(err?.message || "Failed to analyze document. Please try again.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -90,7 +88,7 @@ const Dashboard = () => {
           <aside className="space-y-6">
             <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
               <h3 className="flex items-center gap-2 font-display text-sm font-semibold text-foreground">
-                <FileText className="h-4 w-4 text-civic-amber" /> Upload Document
+                <FileText className="h-4 w-4 text-secondary" /> Upload Document
               </h3>
               <div className="mt-4">
                 <DocumentUpload onFileSelect={handleFileSelect} isAnalyzing={isAnalyzing} />
@@ -100,7 +98,7 @@ const Dashboard = () => {
             {history.length > 0 && (
               <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
                 <h3 className="flex items-center gap-2 font-display text-sm font-semibold text-foreground">
-                  <Clock className="h-4 w-4 text-civic-teal" /> History
+                  <Clock className="h-4 w-4 text-accent" /> History
                 </h3>
                 <div className="mt-3 space-y-2">
                   {history.map((doc, i) => (
@@ -137,7 +135,7 @@ const Dashboard = () => {
                 />
 
                 <div className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-civic-teal" />
+                  <MessageSquare className="h-4 w-4 text-accent" />
                   <h3 className="font-display text-lg font-semibold text-foreground">Ask Questions</h3>
                 </div>
                 <ChatInterface documentName={currentDocName} documentText={currentDocText} />
@@ -151,7 +149,7 @@ const Dashboard = () => {
                   No Document Analyzed Yet
                 </h3>
                 <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                  Upload a legal document from the sidebar to get started. We'll break it down into simple, understandable language.
+                  Upload a legal document from the sidebar to get started. Our AI will break it down into simple, understandable language.
                 </p>
               </div>
             )}

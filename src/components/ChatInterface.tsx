@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User } from "lucide-react";
 import type { ChatMessage } from "@/lib/analysisTypes";
+import { streamChat } from "@/lib/aiService";
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
 
 interface ChatInterfaceProps {
   documentName: string;
@@ -27,39 +29,56 @@ const ChatInterface = ({ documentName, documentText }: ChatInterfaceProps) => {
     if (!input.trim() || isLoading) return;
 
     const userMessage: ChatMessage = { role: "user", content: input.trim() };
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response (will be replaced with Lovable AI when Cloud is enabled)
-    setTimeout(() => {
-      const responses = [
-        `Based on the document, here's what I found regarding your question:\n\nThe document addresses this topic in several sections. The key points are:\n\n1. **Relevant provisions** exist that directly relate to your query\n2. **Implementation timeline** is typically 90 days after enactment\n3. **Citizen rights** are protected under the accountability framework\n\nWould you like me to go deeper into any specific aspect?`,
-        `Great question! Let me break this down simply:\n\n• The law creates new protections for citizens in this area\n• Government agencies must comply within a set timeframe\n• There are penalties for non-compliance\n• You can file complaints if your rights aren't respected\n\nThe most important thing to know is that this strengthens your rights as a citizen.`,
-        `Here's what the document says about this:\n\nThe relevant section establishes a clear framework. In plain language, it means the government must be more transparent and responsive. Officials who don't follow these rules face consequences.\n\n**Key takeaway:** This is designed to benefit ordinary citizens by making government processes simpler and more accountable.`,
-      ];
-      
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: responses[Math.floor(Math.random() * responses.length)] },
-      ]);
+    let assistantSoFar = "";
+
+    const upsertAssistant = (chunk: string) => {
+      assistantSoFar += chunk;
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant" && prev.length > 1 && prev[prev.length - 2]?.role === "user") {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+        }
+        return [...prev, { role: "assistant", content: assistantSoFar }];
+      });
+    };
+
+    try {
+      await streamChat({
+        messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
+        documentText,
+        documentName,
+        onDelta: upsertAssistant,
+        onDone: () => setIsLoading(false),
+        onError: (err) => {
+          toast.error(err);
+          setIsLoading(false);
+        },
+      });
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to get a response. Please try again.");
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
     <div className="flex h-[500px] flex-col rounded-xl border border-border bg-card shadow-soft">
       <div className="border-b border-border px-4 py-3">
         <h3 className="font-display text-sm font-semibold text-foreground">Ask About This Document</h3>
-        <p className="text-xs text-muted-foreground">Get plain-language answers about {documentName}</p>
+        <p className="text-xs text-muted-foreground">AI-powered answers about {documentName}</p>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
             {msg.role === "assistant" && (
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-civic-teal/15">
-                <Bot className="h-4 w-4 text-civic-teal" />
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/15">
+                <Bot className="h-4 w-4 text-accent" />
               </div>
             )}
             <div
@@ -74,16 +93,16 @@ const ChatInterface = ({ documentName, documentText }: ChatInterfaceProps) => {
               </div>
             </div>
             {msg.role === "user" && (
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-civic-amber/15">
-                <User className="h-4 w-4 text-civic-amber" />
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary/15">
+                <User className="h-4 w-4 text-secondary" />
               </div>
             )}
           </div>
         ))}
-        {isLoading && (
+        {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex gap-3">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-civic-teal/15">
-              <Bot className="h-4 w-4 text-civic-teal" />
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/15">
+              <Bot className="h-4 w-4 text-accent" />
             </div>
             <div className="rounded-xl bg-muted/50 px-4 py-3">
               <div className="flex gap-1">
@@ -109,7 +128,7 @@ const ChatInterface = ({ documentName, documentText }: ChatInterfaceProps) => {
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-civic-navy-light disabled:opacity-50"
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-50"
           >
             <Send className="h-4 w-4" />
           </button>

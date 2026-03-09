@@ -1,10 +1,12 @@
 export interface DocumentAnalysis {
   summary: string;
   keyHighlights: string[];
-  importantClauses: { title: string; explanation: string }[];
+  importantClauses: { title: string; explanation: string; isHighlighted?: boolean }[];
   citizenImpact: string;
   faq: { question: string; answer: string }[];
   simplifiedSummary: string;
+  confidenceScore?: number;
+  documentType?: string;
 }
 
 export interface ChatMessage {
