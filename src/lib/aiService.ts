@@ -1,15 +1,25 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { DocumentAnalysis } from "./analysisTypes";
 
+const MAX_TEXT_LENGTH = 25000;
+
 export async function analyzeDocument(
   text: string,
   documentName: string,
   onProgress?: (stage: string, progress: number) => void
 ): Promise<{ analysis: DocumentAnalysis; chunksProcessed: number }> {
-  onProgress?.("Sending document to AI for analysis...", 30);
+  onProgress?.("Preparing document for analysis...", 25);
+
+  // Truncate on client side to avoid sending huge payloads
+  let processedText = text;
+  if (processedText.length > MAX_TEXT_LENGTH) {
+    processedText = processedText.slice(0, MAX_TEXT_LENGTH) + "\n\n[Document truncated for processing]";
+  }
+
+  onProgress?.("Sending document to AI for analysis...", 35);
 
   const { data, error } = await supabase.functions.invoke("analyze-document", {
-    body: { text, documentName },
+    body: { text: processedText, documentName },
   });
 
   if (error) {

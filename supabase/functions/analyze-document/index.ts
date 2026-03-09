@@ -16,43 +16,7 @@ serve(async (req) => {
     const { text, documentName } = await req.json();
     if (!text) throw new Error("No document text provided");
 
-    // Chunk the text for processing
-    const chunks = chunkText(text, 4000, 200);
-    const totalChunks = chunks.length;
-    const isLargeDoc = totalChunks > 25;
-
-    // For large docs, create micro-summaries first then combine
-    let compressedText: string;
-    if (isLargeDoc) {
-      // Process in batches of 10 chunks
-      const batchSize = 10;
-      const microSummaries: string[] = [];
-      
-      for (let i = 0; i < chunks.length; i += batchSize) {
-        const batch = chunks.slice(i, i + batchSize).join("\n\n---\n\n");
-        const summary = await callAI(LOVABLE_API_KEY, [
-          {
-            role: "system",
-            content: "You are a legal document analyst. Summarize the following document sections into a dense, information-preserving summary. Keep all key facts, numbers, dates, and legal provisions. Be concise but thorough.",
-          },
-          {
-            role: "user",
-            content: `Summarize these document sections:\n\n${batch}`,
-          },
-        ]);
-        microSummaries.push(summary);
-      }
-      compressedText = microSummaries.join("\n\n");
-    } else {
-      compressedText = chunks.join("\n\n---\n\n");
-    }
-
-    // Truncate if still too long (keep ~30k chars for the final prompt)
-    if (compressedText.length > 30000) {
-      compressedText = compressedText.slice(0, 30000) + "\n\n[Document truncated for processing]";
-    }
-
-    // Generate the full analysis using tool calling for structured output
+    // Text is already truncated client-side, just use it directly
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -60,7 +24,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
@@ -68,7 +32,7 @@ serve(async (req) => {
           },
           {
             role: "user",
-            content: `Analyze this legislative document titled "${documentName}":\n\n${compressedText}`,
+            content: `Analyze this legislative document titled "${documentName}":\n\n${text}`,
           },
         ],
         tools: [
@@ -98,9 +62,9 @@ serve(async (req) => {
                     items: {
                       type: "object",
                       properties: {
-                        title: { type: "string", description: "The clause/section title or number" },
-                        explanation: { type: "string", description: "Plain-language explanation of what this clause means and why it matters" },
-                        isHighlighted: { type: "boolean", description: "Whether this is a particularly important clause" },
+                        title: { type: "string" },
+                        explanation: { type: "string" },
+                        isHighlighted: { type: "boolean" },
                       },
                       required: ["title", "explanation", "isHighlighted"],
                     },
@@ -108,7 +72,7 @@ serve(async (req) => {
                   },
                   citizenImpact: {
                     type: "string",
-                    description: "A detailed markdown explanation of how this law affects ordinary citizens. Use bullet points with bold headers. Cover areas like rights, obligations, benefits, and timelines.",
+                    description: "A detailed markdown explanation of how this law affects ordinary citizens. Use bullet points with bold headers.",
                   },
                   faq: {
                     type: "array",
@@ -124,11 +88,11 @@ serve(async (req) => {
                   },
                   confidenceScore: {
                     type: "number",
-                    description: "A confidence score from 0 to 100 indicating how reliable the analysis is based on the document quality and completeness. 80+ means high confidence.",
+                    description: "A confidence score from 0 to 100 indicating how reliable the analysis is.",
                   },
                   documentType: {
                     type: "string",
-                    description: "The type of document (e.g., 'Parliamentary Bill', 'Executive Order', 'Policy Document', 'Regulation', 'Act')",
+                    description: "The type of document (e.g., 'Parliamentary Bill', 'Act', 'Policy Document')",
                   },
                 },
                 required: ["summary", "simplifiedSummary", "keyHighlights", "importantClauses", "citizenImpact", "faq", "confidenceScore", "documentType"],
@@ -159,14 +123,14 @@ serve(async (req) => {
 
     const result = await response.json();
     const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
-    
+
     if (!toolCall?.function?.arguments) {
       throw new Error("No analysis generated");
     }
 
     const analysis = JSON.parse(toolCall.function.arguments);
 
-    return new Response(JSON.stringify({ analysis, chunksProcessed: totalChunks }), {
+    return new Response(JSON.stringify({ analysis, chunksProcessed: 1 }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
@@ -177,36 +141,3 @@ serve(async (req) => {
     );
   }
 });
-
-function chunkText(text: string, chunkSize = 4000, overlap = 200): string[] {
-  const chunks: string[] = [];
-  let start = 0;
-  while (start < text.length) {
-    const end = Math.min(start + chunkSize, text.length);
-    chunks.push(text.slice(start, end));
-    start = end - overlap;
-  }
-  return chunks;
-}
-
-async function callAI(apiKey: string, messages: Array<{ role: string; content: string }>): Promise<string> {
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
-      messages,
-    }),
-  });
-
-  if (!resp.ok) {
-    const t = await resp.text();
-    throw new Error(`AI call failed [${resp.status}]: ${t}`);
-  }
-
-  const data = await resp.json();
-  return data.choices?.[0]?.message?.content || "";
-}
