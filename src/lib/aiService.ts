@@ -53,10 +53,11 @@ export async function streamChat({
 }: StreamChatParams) {
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
-  // Truncate document to avoid memory limit in edge function
+  // Aggressively truncate for chat to stay within edge function memory limits
+  const CHAT_MAX_TEXT = 8000;
   let trimmedText = documentText;
-  if (trimmedText.length > MAX_TEXT_LENGTH) {
-    trimmedText = trimmedText.slice(0, MAX_TEXT_LENGTH) + "\n\n[Document truncated]";
+  if (trimmedText.length > CHAT_MAX_TEXT) {
+    trimmedText = trimmedText.slice(0, CHAT_MAX_TEXT) + "\n\n[Document truncated for chat]";
   }
 
   const resp = await fetch(url, {
