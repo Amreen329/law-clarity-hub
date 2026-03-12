@@ -148,7 +148,7 @@ const Dashboard = () => {
                   analysis={currentAnalysis}
                   documentName={currentDocName}
                   language={language}
-                  onLanguageChange={setLanguage}
+                  onLanguageChange={handleLanguageChange}
                 />
 
                 <div className="flex items-center gap-2">

@@ -128,7 +128,11 @@ ${analysis.faq.map((f) => `**Q: ${f.question}**\nA: ${f.answer}`).join("\n\n")}`
           </Button>
 
           <Button size="sm" variant="outline" onClick={handleDownload}>
-            <Download className="mr-1.5 h-3.5 w-3.5" /> Export
+            <Download className="mr-1.5 h-3.5 w-3.5" /> Markdown
+          </Button>
+
+          <Button size="sm" variant="outline" onClick={() => exportAnalysisPdf(analysis, documentName)}>
+            <Download className="mr-1.5 h-3.5 w-3.5" /> PDF
           </Button>
         </div>
       </div>
