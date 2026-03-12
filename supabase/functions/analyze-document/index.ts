@@ -13,8 +13,15 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { text, documentName } = await req.json();
+    const { text, documentName, language } = await req.json();
     if (!text) throw new Error("No document text provided");
+
+    const langInstructions: Record<string, string> = {
+      en: "Respond entirely in English.",
+      hi: "Respond entirely in Hindi (हिन्दी). All text including titles, explanations, questions, and answers must be in Hindi.",
+      te: "Respond entirely in Telugu (తెలుగు). All text including titles, explanations, questions, and answers must be in Telugu.",
+    };
+    const langPrompt = langInstructions[language] || langInstructions.en;
 
     // Text is already truncated client-side, just use it directly
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -28,7 +35,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an expert legal analyst who makes laws accessible to ordinary citizens. Analyze the provided legislative document and extract structured information. Use clear, simple language that anyone can understand. Avoid legal jargon.`,
+            content: `You are an expert legal analyst who makes laws accessible to ordinary citizens. Analyze the provided legislative document and extract structured information. Use clear, simple language that anyone can understand. Avoid legal jargon. ${langPrompt}`,
           },
           {
             role: "user",

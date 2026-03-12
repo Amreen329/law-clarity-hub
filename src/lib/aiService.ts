@@ -6,7 +6,8 @@ const MAX_TEXT_LENGTH = 25000;
 export async function analyzeDocument(
   text: string,
   documentName: string,
-  onProgress?: (stage: string, progress: number) => void
+  onProgress?: (stage: string, progress: number) => void,
+  language: string = "en"
 ): Promise<{ analysis: DocumentAnalysis; chunksProcessed: number }> {
   onProgress?.("Preparing document for analysis...", 25);
 
@@ -19,7 +20,7 @@ export async function analyzeDocument(
   onProgress?.("Sending document to AI for analysis...", 35);
 
   const { data, error } = await supabase.functions.invoke("analyze-document", {
-    body: { text: processedText, documentName },
+    body: { text: processedText, documentName, language },
   });
 
   if (error) {
