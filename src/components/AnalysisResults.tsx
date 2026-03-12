@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { DocumentAnalysis, Language } from "@/lib/analysisTypes";
 import { languageLabels } from "@/lib/analysisTypes";
+import { exportAnalysisPdf } from "@/lib/pdfExport";
 import ReactMarkdown from "react-markdown";
 
 interface AnalysisResultsProps {
