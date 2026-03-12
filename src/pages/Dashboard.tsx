@@ -28,41 +28,28 @@ const Dashboard = () => {
   const [language, setLanguage] = useState<Language>("en");
   const [history, setHistory] = useState<AnalyzedDoc[]>([]);
 
-  const handleFileSelect = async (file: File) => {
+  const runAnalysis = async (text: string, fileName: string, lang: Language) => {
     setIsAnalyzing(true);
     setProgress(0);
-    setStage("Extracting text from document...");
+    setStage("Sending document to AI for analysis...");
     setCurrentAnalysis(null);
 
     try {
-      // Step 1: Extract text
-      setProgress(10);
-      setStage("Extracting text from document...");
-      const text = await extractTextFromFile(file);
-      setCurrentDocText(text);
-
-      if (!text.trim()) {
-        throw new Error("Could not extract any text from this document. Please try a different file.");
-      }
-
-      // Step 2: Send to AI
       setProgress(25);
-      setStage("Sending document to AI for analysis...");
-
-      const { analysis } = await analyzeDocument(text, file.name, (s, p) => {
+      const { analysis } = await analyzeDocument(text, fileName, (s, p) => {
         setStage(s);
         setProgress(p);
-      });
+      }, lang);
 
       setProgress(100);
       setStage("Analysis complete!");
       setCurrentAnalysis(analysis);
-      setCurrentDocName(file.name);
+      setCurrentDocName(fileName);
 
-      setHistory((prev) => [
-        { name: file.name, date: new Date().toLocaleDateString(), analysis, text },
-        ...prev,
-      ]);
+      setHistory((prev) => {
+        const filtered = prev.filter((d) => d.name !== fileName);
+        return [{ name: fileName, date: new Date().toLocaleDateString(), analysis, text }, ...filtered];
+      });
 
       toast.success("Document analyzed successfully!");
     } catch (err: any) {
@@ -70,6 +57,36 @@ const Dashboard = () => {
       toast.error(err?.message || "Failed to analyze document. Please try again.");
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleFileSelect = async (file: File) => {
+    setIsAnalyzing(true);
+    setProgress(0);
+    setStage("Extracting text from document...");
+    setCurrentAnalysis(null);
+
+    try {
+      setProgress(10);
+      const text = await extractTextFromFile(file);
+      setCurrentDocText(text);
+
+      if (!text.trim()) {
+        throw new Error("Could not extract any text from this document. Please try a different file.");
+      }
+
+      await runAnalysis(text, file.name, language);
+    } catch (err: any) {
+      console.error("Error processing file:", err);
+      toast.error(err?.message || "Failed to analyze document. Please try again.");
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleLanguageChange = async (lang: Language) => {
+    setLanguage(lang);
+    if (currentDocText && currentDocName) {
+      await runAnalysis(currentDocText, currentDocName, lang);
     }
   };
 
