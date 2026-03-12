@@ -4,12 +4,14 @@ import DocumentUpload from "@/components/DocumentUpload";
 import AnalysisProgress from "@/components/AnalysisProgress";
 import AnalysisResults from "@/components/AnalysisResults";
 import ChatInterface from "@/components/ChatInterface";
+import CompareView from "@/components/CompareView";
 import { extractTextFromFile } from "@/lib/documentParser";
 import { analyzeDocument } from "@/lib/aiService";
 import type { DocumentAnalysis, Language } from "@/lib/analysisTypes";
-import { FileText, Clock, MessageSquare } from "lucide-react";
+import { FileText, Clock, MessageSquare, ArrowLeftRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 interface AnalyzedDoc {
   name: string;
@@ -27,12 +29,14 @@ const Dashboard = () => {
   const [currentDocText, setCurrentDocText] = useState("");
   const [language, setLanguage] = useState<Language>("en");
   const [history, setHistory] = useState<AnalyzedDoc[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
 
   const runAnalysis = async (text: string, fileName: string, lang: Language) => {
     setIsAnalyzing(true);
     setProgress(0);
     setStage("Sending document to AI for analysis...");
     setCurrentAnalysis(null);
+    setShowCompare(false);
 
     try {
       setProgress(25);
@@ -94,6 +98,7 @@ const Dashboard = () => {
     setCurrentAnalysis(doc.analysis);
     setCurrentDocName(doc.name);
     setCurrentDocText(doc.text);
+    setShowCompare(false);
   };
 
   return (
@@ -111,6 +116,17 @@ const Dashboard = () => {
                 <DocumentUpload onFileSelect={handleFileSelect} isAnalyzing={isAnalyzing} />
               </div>
             </div>
+
+            {history.length >= 2 && (
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => setShowCompare(!showCompare)}
+              >
+                <ArrowLeftRight className="h-4 w-4" />
+                {showCompare ? "Back to Analysis" : "Compare Documents"}
+              </Button>
+            )}
 
             {history.length > 0 && (
               <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
@@ -135,7 +151,12 @@ const Dashboard = () => {
 
           {/* Main Content */}
           <main className="min-w-0">
-            {isAnalyzing ? (
+            {showCompare ? (
+              <CompareView
+                documents={history.map((d) => ({ name: d.name, analysis: d.analysis }))}
+                onClose={() => setShowCompare(false)}
+              />
+            ) : isAnalyzing ? (
               <AnalysisProgress progress={progress} stage={stage} />
             ) : currentAnalysis ? (
               <motion.div

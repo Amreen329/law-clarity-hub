@@ -2,11 +2,15 @@ import { Link, useLocation } from "react-router-dom";
 import { Scale, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import ThemeToggle from "@/components/ThemeToggle";
+import UserMenu from "@/components/UserMenu";
+import { useAuth } from "@/hooks/use-auth";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
+  const { user } = useAuth();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-lg">
@@ -20,23 +24,38 @@ const Navbar = () => {
           </span>
         </Link>
 
-        <div className="hidden items-center gap-6 md:flex">
+        <div className="hidden items-center gap-4 md:flex">
           {isHome && (
             <>
               <a href="#features" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Features</a>
               <a href="#how-it-works" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">How It Works</a>
             </>
           )}
-          <Link to="/dashboard">
-            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-civic-navy-light">
-              Open Dashboard
-            </Button>
-          </Link>
+          <ThemeToggle />
+          {user ? (
+            <>
+              <Link to="/dashboard">
+                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-civic-navy-light">
+                  Dashboard
+                </Button>
+              </Link>
+              <UserMenu />
+            </>
+          ) : (
+            <Link to="/auth">
+              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-civic-navy-light">
+                Sign In
+              </Button>
+            </Link>
+          )}
         </div>
 
-        <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
-          {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle />
+          <button onClick={() => setIsOpen(!isOpen)}>
+            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {isOpen && (
@@ -48,9 +67,18 @@ const Navbar = () => {
                 <a href="#how-it-works" className="text-sm font-medium text-muted-foreground" onClick={() => setIsOpen(false)}>How It Works</a>
               </>
             )}
-            <Link to="/dashboard" onClick={() => setIsOpen(false)}>
-              <Button size="sm" className="w-full bg-primary text-primary-foreground">Open Dashboard</Button>
-            </Link>
+            {user ? (
+              <>
+                <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                  <Button size="sm" className="w-full bg-primary text-primary-foreground">Dashboard</Button>
+                </Link>
+                <UserMenu />
+              </>
+            ) : (
+              <Link to="/auth" onClick={() => setIsOpen(false)}>
+                <Button size="sm" className="w-full bg-primary text-primary-foreground">Sign In</Button>
+              </Link>
+            )}
           </div>
         </div>
       )}
