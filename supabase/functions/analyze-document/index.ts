@@ -101,7 +101,7 @@ ${langPrompt}`,
                       },
                       required: ["question", "answer"],
                     },
-                    description: "5-8 frequently asked questions a citizen might have, with clear answers",
+                    description: "6-10 frequently asked questions a citizen might have, with detailed 3-5 sentence answers",
                   },
                   confidenceScore: {
                     type: "number",
