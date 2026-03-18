@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Scale, Menu, X } from "lucide-react";
+import { Scale, Menu, X, Library } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -31,16 +31,21 @@ const Navbar = () => {
               <a href="#how-it-works" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">How It Works</a>
             </>
           )}
-          <ThemeToggle />
-          {user ? (
+          {user && (
             <>
+              <Link to="/bills" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                <Library className="h-3.5 w-3.5" /> Bills
+              </Link>
               <Link to="/dashboard">
-                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-civic-navy-light">
+                <Button size="sm" variant="outline">
                   Dashboard
                 </Button>
               </Link>
-              <UserMenu />
             </>
+          )}
+          <ThemeToggle />
+          {user ? (
+            <UserMenu />
           ) : (
             <Link to="/auth">
               <Button size="sm" className="bg-primary text-primary-foreground hover:bg-civic-navy-light">
@@ -69,6 +74,11 @@ const Navbar = () => {
             )}
             {user ? (
               <>
+                <Link to="/bills" onClick={() => setIsOpen(false)}>
+                  <Button size="sm" variant="outline" className="w-full gap-2">
+                    <Library className="h-3.5 w-3.5" /> Bill Directory
+                  </Button>
+                </Link>
                 <Link to="/dashboard" onClick={() => setIsOpen(false)}>
                   <Button size="sm" className="w-full bg-primary text-primary-foreground">Dashboard</Button>
                 </Link>

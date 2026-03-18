@@ -35,7 +35,17 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an expert legal analyst who makes laws accessible to ordinary citizens. Analyze the provided legislative document and extract structured information. Use clear, simple language that anyone can understand. Avoid legal jargon. ${langPrompt}`,
+            content: `You are an expert legal analyst who makes laws accessible to ordinary citizens. Analyze the provided legislative document and extract structured, detailed information.
+
+CRITICAL INSTRUCTIONS:
+- Write in clear, simple language that anyone can understand. Avoid legal jargon entirely.
+- For the summary: Write 4-6 detailed paragraphs covering the full scope of the document — its purpose, background, major provisions, implementation mechanism, and significance. Do NOT use bullet points in the summary.
+- For the simplified summary: Write 2-3 paragraphs using everyday analogies, relatable examples, and conversational tone as if explaining to a 15-year-old.
+- For citizen impact: Write detailed paragraphs organized by topic (e.g., "How it affects your privacy", "What changes for businesses") with concrete real-world examples.
+- For FAQ answers: Give thorough 3-5 sentence answers, not one-liners.
+- For key highlights: Provide 8-12 detailed one-sentence highlights.
+- For important clauses: Provide 6-10 clauses with detailed 3-4 sentence explanations each.
+${langPrompt}`,
           },
           {
             role: "user",
@@ -53,7 +63,7 @@ serve(async (req) => {
                 properties: {
                   summary: {
                     type: "string",
-                    description: "A comprehensive 3-5 paragraph summary of the document explaining what it does, why it matters, and its main provisions. Use markdown formatting.",
+                    description: "A comprehensive 4-6 paragraph detailed summary covering the document's purpose, historical context, major provisions, implementation mechanism, enforcement, and overall significance. Use markdown formatting with headers. Do NOT use bullet points — write flowing paragraphs.",
                   },
                   simplifiedSummary: {
                     type: "string",
@@ -62,7 +72,7 @@ serve(async (req) => {
                   keyHighlights: {
                     type: "array",
                     items: { type: "string" },
-                    description: "6-10 key highlights or major provisions, each as a clear one-sentence bullet point",
+                    description: "8-12 key highlights or major provisions, each as a detailed one-sentence explanation",
                   },
                   importantClauses: {
                     type: "array",
@@ -75,11 +85,11 @@ serve(async (req) => {
                       },
                       required: ["title", "explanation", "isHighlighted"],
                     },
-                    description: "4-8 important clauses with explanations",
+                    description: "6-10 important clauses with detailed 3-4 sentence explanations each",
                   },
                   citizenImpact: {
                     type: "string",
-                    description: "A detailed markdown explanation of how this law affects ordinary citizens. Use bullet points with bold headers.",
+                    description: "A detailed markdown explanation of how this law affects ordinary citizens organized by topic area. Write 3-5 paragraphs with bold headers for each area of impact. Include specific real-world examples and scenarios.",
                   },
                   faq: {
                     type: "array",
@@ -91,7 +101,7 @@ serve(async (req) => {
                       },
                       required: ["question", "answer"],
                     },
-                    description: "5-8 frequently asked questions a citizen might have, with clear answers",
+                    description: "6-10 frequently asked questions a citizen might have, with detailed 3-5 sentence answers",
                   },
                   confidenceScore: {
                     type: "number",
