@@ -72,7 +72,7 @@ ${langPrompt}`,
                   keyHighlights: {
                     type: "array",
                     items: { type: "string" },
-                    description: "6-10 key highlights or major provisions, each as a clear one-sentence bullet point",
+                    description: "8-12 key highlights or major provisions, each as a detailed one-sentence explanation",
                   },
                   importantClauses: {
                     type: "array",
