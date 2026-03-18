@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      analyses: {
+        Row: {
+          analysis: Json
+          created_at: string
+          document_name: string
+          document_text: string
+          id: string
+          language: string
+          user_id: string
+        }
+        Insert: {
+          analysis: Json
+          created_at?: string
+          document_name: string
+          document_text: string
+          id?: string
+          language?: string
+          user_id: string
+        }
+        Update: {
+          analysis?: Json
+          created_at?: string
+          document_name?: string
+          document_text?: string
+          id?: string
+          language?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bills: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          full_text: string
+          id: string
+          status: string
+          title: string
+          year: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          full_text: string
+          id?: string
+          status?: string
+          title: string
+          year: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          full_text?: string
+          id?: string
+          status?: string
+          title?: string
+          year?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
