@@ -35,7 +35,17 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an expert legal analyst who makes laws accessible to ordinary citizens. Analyze the provided legislative document and extract structured information. Use clear, simple language that anyone can understand. Avoid legal jargon. ${langPrompt}`,
+            content: `You are an expert legal analyst who makes laws accessible to ordinary citizens. Analyze the provided legislative document and extract structured, detailed information.
+
+CRITICAL INSTRUCTIONS:
+- Write in clear, simple language that anyone can understand. Avoid legal jargon entirely.
+- For the summary: Write 4-6 detailed paragraphs covering the full scope of the document — its purpose, background, major provisions, implementation mechanism, and significance. Do NOT use bullet points in the summary.
+- For the simplified summary: Write 2-3 paragraphs using everyday analogies, relatable examples, and conversational tone as if explaining to a 15-year-old.
+- For citizen impact: Write detailed paragraphs organized by topic (e.g., "How it affects your privacy", "What changes for businesses") with concrete real-world examples.
+- For FAQ answers: Give thorough 3-5 sentence answers, not one-liners.
+- For key highlights: Provide 8-12 detailed one-sentence highlights.
+- For important clauses: Provide 6-10 clauses with detailed 3-4 sentence explanations each.
+${langPrompt}`,
           },
           {
             role: "user",
