@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import DocumentUpload from "@/components/DocumentUpload";
 import AnalysisProgress from "@/components/AnalysisProgress";
@@ -7,13 +8,16 @@ import ChatInterface from "@/components/ChatInterface";
 import CompareView from "@/components/CompareView";
 import { extractTextFromFile } from "@/lib/documentParser";
 import { analyzeDocument } from "@/lib/aiService";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import type { DocumentAnalysis, Language } from "@/lib/analysisTypes";
-import { FileText, Clock, MessageSquare, ArrowLeftRight } from "lucide-react";
+import { FileText, Clock, MessageSquare, ArrowLeftRight, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 interface AnalyzedDoc {
+  id?: string;
   name: string;
   date: string;
   analysis: DocumentAnalysis;
@@ -30,6 +34,72 @@ const Dashboard = () => {
   const [language, setLanguage] = useState<Language>("en");
   const [history, setHistory] = useState<AnalyzedDoc[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+  const { user } = useAuth();
+  const location = useLocation();
+
+  // Load history from DB on mount
+  useEffect(() => {
+    if (!user) return;
+    const loadHistory = async () => {
+      const { data, error } = await supabase
+        .from("analyses")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (!error && data) {
+        setHistory(
+          data.map((d: any) => ({
+            id: d.id,
+            name: d.document_name,
+            date: new Date(d.created_at).toLocaleDateString(),
+            analysis: d.analysis as DocumentAnalysis,
+            text: d.document_text,
+          }))
+        );
+      }
+    };
+    loadHistory();
+  }, [user]);
+
+  // Handle bill from directory navigation
+  useEffect(() => {
+    const state = location.state as { bill?: { title: string; full_text: string } } | null;
+    if (state?.bill) {
+      setCurrentDocText(state.bill.full_text);
+      setCurrentDocName(state.bill.title);
+      runAnalysis(state.bill.full_text, state.bill.title, language);
+      // Clear state so refresh doesn't re-trigger
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  const saveToDb = async (name: string, text: string, analysis: DocumentAnalysis, lang: Language) => {
+    if (!user) return;
+    // Upsert by document name for same user
+    const { data: existing } = await supabase
+      .from("analyses")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("document_name", name)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from("analyses")
+        .update({ analysis: analysis as any, document_text: text, language: lang })
+        .eq("id", existing.id);
+    } else {
+      await supabase.from("analyses").insert({
+        user_id: user.id,
+        document_name: name,
+        document_text: text,
+        analysis: analysis as any,
+        language: lang,
+      });
+    }
+  };
 
   const runAnalysis = async (text: string, fileName: string, lang: Language) => {
     setIsAnalyzing(true);
@@ -50,10 +120,30 @@ const Dashboard = () => {
       setCurrentAnalysis(analysis);
       setCurrentDocName(fileName);
 
-      setHistory((prev) => {
-        const filtered = prev.filter((d) => d.name !== fileName);
-        return [{ name: fileName, date: new Date().toLocaleDateString(), analysis, text }, ...filtered];
-      });
+      // Save to DB
+      await saveToDb(fileName, text, analysis, lang);
+
+      // Reload history from DB
+      if (user) {
+        const { data } = await supabase
+          .from("analyses")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        if (data) {
+          setHistory(
+            data.map((d: any) => ({
+              id: d.id,
+              name: d.document_name,
+              date: new Date(d.created_at).toLocaleDateString(),
+              analysis: d.analysis as DocumentAnalysis,
+              text: d.document_text,
+            }))
+          );
+        }
+      }
 
       toast.success("Document analyzed successfully!");
     } catch (err: any) {
@@ -101,6 +191,18 @@ const Dashboard = () => {
     setShowCompare(false);
   };
 
+  const deleteFromHistory = async (doc: AnalyzedDoc) => {
+    if (!doc.id) return;
+    await supabase.from("analyses").delete().eq("id", doc.id);
+    setHistory((prev) => prev.filter((d) => d.id !== doc.id));
+    if (currentDocName === doc.name) {
+      setCurrentAnalysis(null);
+      setCurrentDocName("");
+      setCurrentDocText("");
+    }
+    toast.success("Analysis deleted");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -135,14 +237,27 @@ const Dashboard = () => {
                 </h3>
                 <div className="mt-3 space-y-2">
                   {history.map((doc, i) => (
-                    <button
-                      key={i}
-                      onClick={() => loadFromHistory(doc)}
-                      className="w-full rounded-lg p-2.5 text-left transition-colors hover:bg-muted"
+                    <div
+                      key={doc.id || i}
+                      className="flex items-center justify-between rounded-lg p-2.5 transition-colors hover:bg-muted"
                     >
-                      <p className="truncate text-xs font-medium text-foreground">{doc.name}</p>
-                      <p className="text-xs text-muted-foreground">{doc.date}</p>
-                    </button>
+                      <button
+                        onClick={() => loadFromHistory(doc)}
+                        className="flex-1 text-left"
+                      >
+                        <p className="truncate text-xs font-medium text-foreground">{doc.name}</p>
+                        <p className="text-xs text-muted-foreground">{doc.date}</p>
+                      </button>
+                      {doc.id && (
+                        <button
+                          onClick={() => deleteFromHistory(doc)}
+                          className="ml-2 rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -187,7 +302,9 @@ const Dashboard = () => {
                   No Document Analyzed Yet
                 </h3>
                 <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                  Upload a legal document from the sidebar to get started. Our AI will break it down into simple, understandable language.
+                  Upload a legal document from the sidebar or browse the{" "}
+                  <a href="/bills" className="text-primary underline">Bill Directory</a>{" "}
+                  to get started.
                 </p>
               </div>
             )}
