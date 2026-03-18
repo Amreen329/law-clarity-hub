@@ -89,7 +89,7 @@ ${langPrompt}`,
                   },
                   citizenImpact: {
                     type: "string",
-                    description: "A detailed markdown explanation of how this law affects ordinary citizens. Use bullet points with bold headers.",
+                    description: "A detailed markdown explanation of how this law affects ordinary citizens organized by topic area. Write 3-5 paragraphs with bold headers for each area of impact. Include specific real-world examples and scenarios.",
                   },
                   faq: {
                     type: "array",
