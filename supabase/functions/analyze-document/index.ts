@@ -85,7 +85,7 @@ ${langPrompt}`,
                       },
                       required: ["title", "explanation", "isHighlighted"],
                     },
-                    description: "4-8 important clauses with explanations",
+                    description: "6-10 important clauses with detailed 3-4 sentence explanations each",
                   },
                   citizenImpact: {
                     type: "string",
