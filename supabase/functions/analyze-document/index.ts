@@ -64,7 +64,7 @@ ${langPrompt}`,
                 properties: {
                   summary: {
                     type: "string",
-                    description: "A comprehensive 4-6 paragraph detailed summary covering the document's purpose, historical context, major provisions, implementation mechanism, enforcement, and overall significance. Use markdown formatting with headers. Do NOT use bullet points — write flowing paragraphs.",
+                    description: "A comprehensive 2-3 paragraph detailed summary. Each paragraph should be 4-6 sentences. Cover the document's purpose, historical context, major provisions, implementation mechanism, enforcement, and overall significance. Use markdown formatting. Do NOT use bullet points or numbered lists — write flowing, rich paragraphs.",
                   },
                   simplifiedSummary: {
                     type: "string",
