@@ -6,12 +6,16 @@ import AnalysisProgress from "@/components/AnalysisProgress";
 import AnalysisResults from "@/components/AnalysisResults";
 import ChatInterface from "@/components/ChatInterface";
 import CompareView from "@/components/CompareView";
+import TextToSpeech from "@/components/TextToSpeech";
+import LanguagePopup from "@/components/LanguagePopup";
+import OnboardingGuide from "@/components/OnboardingGuide";
 import { extractTextFromFile } from "@/lib/documentParser";
 import { analyzeDocument } from "@/lib/aiService";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import type { DocumentAnalysis, Language } from "@/lib/analysisTypes";
-import { FileText, Clock, MessageSquare, ArrowLeftRight, Trash2 } from "lucide-react";
+import { languageLabels } from "@/lib/analysisTypes";
+import { FileText, Clock, MessageSquare, ArrowLeftRight, Trash2, Globe, Volume2, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -34,6 +38,8 @@ const Dashboard = () => {
   const [language, setLanguage] = useState<Language>("en");
   const [history, setHistory] = useState<AnalyzedDoc[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [showLanguagePopup, setShowLanguagePopup] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const { user } = useAuth();
   const location = useLocation();
 
@@ -70,14 +76,12 @@ const Dashboard = () => {
       setCurrentDocText(state.bill.full_text);
       setCurrentDocName(state.bill.title);
       runAnalysis(state.bill.full_text, state.bill.title, language);
-      // Clear state so refresh doesn't re-trigger
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
   const saveToDb = async (name: string, text: string, analysis: DocumentAnalysis, lang: Language) => {
     if (!user) return;
-    // Upsert by document name for same user
     const { data: existing } = await supabase
       .from("analyses")
       .select("id")
@@ -120,10 +124,8 @@ const Dashboard = () => {
       setCurrentAnalysis(analysis);
       setCurrentDocName(fileName);
 
-      // Save to DB
       await saveToDb(fileName, text, analysis, lang);
 
-      // Reload history from DB
       if (user) {
         const { data } = await supabase
           .from("analyses")
@@ -206,10 +208,40 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      <OnboardingGuide forceShow={showOnboarding} onDismiss={() => setShowOnboarding(false)} />
+
       <div className="container mx-auto px-4 pt-20 pb-12">
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
           {/* Sidebar */}
-          <aside className="space-y-6">
+          <aside className="space-y-4">
+            {/* Language Selector - Highlighted */}
+            <div className="rounded-xl border-2 border-accent/30 bg-accent/5 p-4 shadow-soft">
+              <h3 className="flex items-center gap-2 font-display text-sm font-semibold text-foreground">
+                <Globe className="h-4 w-4 text-accent" /> Preferred Language
+              </h3>
+              <div className="mt-3 flex rounded-lg border border-border bg-card p-0.5">
+                {(["en", "hi", "te"] as Language[]).map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => handleLanguageChange(lang)}
+                    className={`flex-1 rounded-md py-2 text-xs font-medium transition-all ${
+                      language === lang
+                        ? "bg-accent text-accent-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {languageLabels[lang]}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowLanguagePopup(true)}
+                className="mt-2 w-full text-xs text-accent hover:underline"
+              >
+                Learn more about languages →
+              </button>
+            </div>
+
             <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
               <h3 className="flex items-center gap-2 font-display text-sm font-semibold text-foreground">
                 <FileText className="h-4 w-4 text-secondary" /> Upload Document
@@ -229,6 +261,14 @@ const Dashboard = () => {
                 {showCompare ? "Back to Analysis" : "Compare Documents"}
               </Button>
             )}
+
+            <Button
+              variant="ghost"
+              className="w-full gap-2 text-muted-foreground"
+              onClick={() => setShowOnboarding(true)}
+            >
+              <BookOpen className="h-4 w-4" /> Show Guide Again
+            </Button>
 
             {history.length > 0 && (
               <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
@@ -287,6 +327,12 @@ const Dashboard = () => {
                   onLanguageChange={handleLanguageChange}
                 />
 
+                {/* Text-to-Speech */}
+                <TextToSpeech
+                  text={currentAnalysis.summary}
+                  title="🔊 Listen to Summary"
+                />
+
                 <div className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4 text-accent" />
                   <h3 className="font-display text-lg font-semibold text-foreground">Ask Questions</h3>
@@ -302,7 +348,7 @@ const Dashboard = () => {
                   No Document Analyzed Yet
                 </h3>
                 <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                  Upload a legal document from the sidebar or browse the{" "}
+                  Upload a government bill from the sidebar or browse the{" "}
                   <a href="/bills" className="text-primary underline">Bill Directory</a>{" "}
                   to get started.
                 </p>
@@ -311,6 +357,13 @@ const Dashboard = () => {
           </main>
         </div>
       </div>
+
+      <LanguagePopup
+        open={showLanguagePopup}
+        onOpenChange={setShowLanguagePopup}
+        currentLanguage={language}
+        onLanguageChange={handleLanguageChange}
+      />
     </div>
   );
 };

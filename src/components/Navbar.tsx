@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Scale, Menu, X, Library } from "lucide-react";
+import { Scale, Menu, X, Library, LayoutDashboard, BookOpen, Home } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -11,6 +11,13 @@ const Navbar = () => {
   const location = useLocation();
   const isHome = location.pathname === "/";
   const { user } = useAuth();
+
+  const navLinkClass = (path: string) =>
+    `flex items-center gap-1.5 text-sm font-medium transition-colors ${
+      location.pathname === path
+        ? "text-foreground"
+        : "text-muted-foreground hover:text-foreground"
+    }`;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-lg">
@@ -31,15 +38,18 @@ const Navbar = () => {
               <a href="#how-it-works" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">How It Works</a>
             </>
           )}
+          {!isHome && user && (
+            <Link to="/" className={navLinkClass("/")}>
+              <Home className="h-3.5 w-3.5" /> Home
+            </Link>
+          )}
           {user && (
             <>
-              <Link to="/bills" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+              <Link to="/bills" className={navLinkClass("/bills")}>
                 <Library className="h-3.5 w-3.5" /> Bills
               </Link>
-              <Link to="/dashboard">
-                <Button size="sm" variant="outline">
-                  Dashboard
-                </Button>
+              <Link to="/dashboard" className={navLinkClass("/dashboard")}>
+                <LayoutDashboard className="h-3.5 w-3.5" /> Dashboard
               </Link>
             </>
           )}
@@ -48,7 +58,7 @@ const Navbar = () => {
             <UserMenu />
           ) : (
             <Link to="/auth">
-              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-civic-navy-light">
+              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
                 Sign In
               </Button>
             </Link>
@@ -74,13 +84,22 @@ const Navbar = () => {
             )}
             {user ? (
               <>
+                {!isHome && (
+                  <Link to="/" onClick={() => setIsOpen(false)}>
+                    <Button size="sm" variant="ghost" className="w-full gap-2 justify-start">
+                      <Home className="h-3.5 w-3.5" /> Home
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/bills" onClick={() => setIsOpen(false)}>
                   <Button size="sm" variant="outline" className="w-full gap-2">
                     <Library className="h-3.5 w-3.5" /> Bill Directory
                   </Button>
                 </Link>
                 <Link to="/dashboard" onClick={() => setIsOpen(false)}>
-                  <Button size="sm" className="w-full bg-primary text-primary-foreground">Dashboard</Button>
+                  <Button size="sm" className="w-full gap-2 bg-primary text-primary-foreground">
+                    <LayoutDashboard className="h-3.5 w-3.5" /> Dashboard
+                  </Button>
                 </Link>
                 <UserMenu />
               </>
