@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   FileText, Lightbulb, Scale, Users, HelpCircle, Sparkles,
-  Copy, Check, Download, Search, Shield, Star, AlertTriangle
+  Copy, Check, Download, Search, Shield, Star, AlertTriangle, Globe, Volume2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +9,8 @@ import type { DocumentAnalysis, Language } from "@/lib/analysisTypes";
 import { languageLabels } from "@/lib/analysisTypes";
 import { exportAnalysisPdf } from "@/lib/pdfExport";
 import ReactMarkdown from "react-markdown";
+import TextToSpeech from "@/components/TextToSpeech";
+import LanguagePopup from "@/components/LanguagePopup";
 
 interface AnalysisResultsProps {
   analysis: DocumentAnalysis;
@@ -37,6 +39,7 @@ const AnalysisResults = ({ analysis, documentName, language, onLanguageChange }:
   const [simplified, setSimplified] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showLanguagePopup, setShowLanguagePopup] = useState(false);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -100,22 +103,16 @@ ${analysis.faq.map((f) => `**Q: ${f.question}**\nA: ${f.answer}`).join("\n\n")}`
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {/* Language Toggle */}
-          <div className="flex rounded-lg border border-border bg-muted/50 p-0.5">
-            {(["en", "hi", "te"] as Language[]).map((lang) => (
-              <button
-                key={lang}
-                onClick={() => onLanguageChange(lang)}
-                className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                  language === lang
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {languageLabels[lang]}
-              </button>
-            ))}
-          </div>
+          {/* Language Button with popup */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowLanguagePopup(true)}
+            className="gap-1.5 border-accent/30 text-accent hover:bg-accent/10"
+          >
+            <Globe className="h-3.5 w-3.5" />
+            {languageLabels[language]}
+          </Button>
 
           <Button
             size="sm"
@@ -159,7 +156,7 @@ ${analysis.faq.map((f) => `**Q: ${f.question}**\nA: ${f.answer}`).join("\n\n")}`
           <TabsTrigger value="faq" className="gap-1.5 text-xs"><HelpCircle className="h-3.5 w-3.5" />FAQ</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="summary" className="mt-4">
+        <TabsContent value="summary" className="mt-4 space-y-4">
           <div className="rounded-xl border border-border bg-card p-6 shadow-soft">
             <div className="flex items-start justify-between">
               <h3 className="font-display text-lg font-semibold text-foreground">
@@ -171,6 +168,11 @@ ${analysis.faq.map((f) => `**Q: ${f.question}**\nA: ${f.answer}`).join("\n\n")}`
               <ReactMarkdown>{simplified ? analysis.simplifiedSummary : analysis.summary}</ReactMarkdown>
             </div>
           </div>
+          {/* Inline TTS for current tab */}
+          <TextToSpeech
+            text={simplified ? analysis.simplifiedSummary : analysis.summary}
+            title="🔊 Listen to this summary"
+          />
         </TabsContent>
 
         <TabsContent value="highlights" className="mt-4">
@@ -224,7 +226,7 @@ ${analysis.faq.map((f) => `**Q: ${f.question}**\nA: ${f.answer}`).join("\n\n")}`
           </div>
         </TabsContent>
 
-        <TabsContent value="impact" className="mt-4">
+        <TabsContent value="impact" className="mt-4 space-y-4">
           <div className="rounded-xl border border-border bg-card p-6 shadow-soft">
             <div className="flex items-start justify-between">
               <h3 className="font-display text-lg font-semibold text-foreground">
@@ -236,6 +238,10 @@ ${analysis.faq.map((f) => `**Q: ${f.question}**\nA: ${f.answer}`).join("\n\n")}`
               <ReactMarkdown>{analysis.citizenImpact}</ReactMarkdown>
             </div>
           </div>
+          <TextToSpeech
+            text={analysis.citizenImpact}
+            title="🔊 Listen to citizen impact"
+          />
         </TabsContent>
 
         <TabsContent value="faq" className="mt-4">
@@ -256,6 +262,13 @@ ${analysis.faq.map((f) => `**Q: ${f.question}**\nA: ${f.answer}`).join("\n\n")}`
           </div>
         </TabsContent>
       </Tabs>
+
+      <LanguagePopup
+        open={showLanguagePopup}
+        onOpenChange={setShowLanguagePopup}
+        currentLanguage={language}
+        onLanguageChange={onLanguageChange}
+      />
     </div>
   );
 };
