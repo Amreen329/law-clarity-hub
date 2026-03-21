@@ -39,6 +39,7 @@ export type StreamChatParams = {
   messages: Array<{ role: "user" | "assistant"; content: string }>;
   documentText: string;
   documentName: string;
+  language?: string;
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
@@ -48,6 +49,7 @@ export async function streamChat({
   messages,
   documentText,
   documentName,
+  language = "en",
   onDelta,
   onDone,
   onError,
@@ -67,7 +69,7 @@ export async function streamChat({
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages, documentText: trimmedText, documentName }),
+    body: JSON.stringify({ messages, documentText: trimmedText, documentName, language }),
   });
 
   if (!resp.ok) {

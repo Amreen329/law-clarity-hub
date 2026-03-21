@@ -8,9 +8,10 @@ import { toast } from "sonner";
 interface ChatInterfaceProps {
   documentName: string;
   documentText: string;
+  language?: string;
 }
 
-const ChatInterface = ({ documentName, documentText }: ChatInterfaceProps) => {
+const ChatInterface = ({ documentName, documentText, language = "en" }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
@@ -52,6 +53,7 @@ const ChatInterface = ({ documentName, documentText }: ChatInterfaceProps) => {
         messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
         documentText,
         documentName,
+        language,
         onDelta: upsertAssistant,
         onDone: () => setIsLoading(false),
         onError: (err) => {

@@ -128,15 +128,15 @@ const Profile = () => {
               <Label className="flex items-center gap-2">
                 <Globe className="h-4 w-4 text-accent" /> Preferred Language
               </Label>
-              <div className="mt-2 flex rounded-lg border border-border bg-background p-0.5">
-                {(["en", "hi", "te"] as Language[]).map((lang) => (
+              <div className="mt-2 grid grid-cols-3 gap-1.5">
+                {(Object.keys(languageLabels) as Language[]).map((lang) => (
                   <button
                     key={lang}
                     onClick={() => setPreferredLang(lang)}
-                    className={`flex-1 rounded-md py-2.5 text-sm font-medium transition-all ${
+                    className={`rounded-lg border px-2 py-2 text-xs font-medium transition-all ${
                       preferredLang === lang
-                        ? "bg-accent text-accent-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "border-accent bg-accent text-accent-foreground shadow-sm"
+                        : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
                     }`}
                   >
                     {languageLabels[lang]}

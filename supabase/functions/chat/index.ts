@@ -13,10 +13,16 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { messages, documentText, documentName } = await req.json();
+    const { messages, documentText, documentName, language } = await req.json();
 
-    // Use the document text directly as context (already truncated client-side to ~8k chars)
+    const langMap: Record<string, string> = {
+      en: "English", hi: "Hindi", te: "Telugu", ta: "Tamil", kn: "Kannada",
+      ml: "Malayalam", bn: "Bengali", mr: "Marathi", gu: "Gujarati", pa: "Punjabi", ur: "Urdu",
+    };
+    const langName = langMap[language] || "English";
+
     const systemPrompt = `You are an AI legal assistant helping citizens understand the document "${documentName}". 
+Respond entirely in ${langName}.
 
 Your role is to:
 - Answer questions using ONLY the document content provided below
@@ -25,11 +31,12 @@ Your role is to:
 - If the answer isn't in the document, say so honestly
 - Use markdown formatting for clarity
 - Be concise but thorough
+- ALWAYS respond in ${langName}
 
 DOCUMENT CONTENT:
 ${documentText}
 
-If the user's question cannot be answered from the document, say: "I couldn't find specific information about that in this document. Try rephrasing your question."`;
+If the user's question cannot be answered from the document, say so in ${langName}.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
