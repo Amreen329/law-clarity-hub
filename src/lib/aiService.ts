@@ -39,6 +39,7 @@ export type StreamChatParams = {
   messages: Array<{ role: "user" | "assistant"; content: string }>;
   documentText: string;
   documentName: string;
+  language?: string;
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
