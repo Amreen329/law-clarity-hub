@@ -140,13 +140,29 @@ ${langPrompt}`,
     }
 
     const result = await response.json();
+    
+    // Try tool_calls first, then fall back to parsing content directly
+    let analysis;
     const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
-
-    if (!toolCall?.function?.arguments) {
-      throw new Error("No analysis generated");
+    if (toolCall?.function?.arguments) {
+      analysis = JSON.parse(toolCall.function.arguments);
+    } else {
+      // Some models return the result in content instead of tool_calls
+      const content = result.choices?.[0]?.message?.content;
+      if (content) {
+        try {
+          // Try to extract JSON from the content
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            analysis = JSON.parse(jsonMatch[0]);
+          }
+        } catch { /* fall through */ }
+      }
+      if (!analysis) {
+        console.error("Unexpected AI response structure:", JSON.stringify(result).slice(0, 500));
+        throw new Error("No analysis generated — unexpected response format");
+      }
     }
-
-    const analysis = JSON.parse(toolCall.function.arguments);
 
     return new Response(JSON.stringify({ analysis, chunksProcessed: 1 }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
