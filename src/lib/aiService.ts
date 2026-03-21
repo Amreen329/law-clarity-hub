@@ -49,6 +49,7 @@ export async function streamChat({
   messages,
   documentText,
   documentName,
+  language = "en",
   onDelta,
   onDone,
   onError,
