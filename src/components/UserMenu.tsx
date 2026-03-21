@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,6 +35,9 @@ const UserMenu = () => {
           <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
           <p className="text-xs text-muted-foreground truncate">{user.email}</p>
         </div>
+        <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
+          <Settings className="mr-2 h-4 w-4" /> Profile Settings
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
           <LogOut className="mr-2 h-4 w-4" /> Sign Out
         </DropdownMenuItem>
