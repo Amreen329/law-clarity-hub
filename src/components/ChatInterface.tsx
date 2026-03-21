@@ -8,6 +8,7 @@ import { toast } from "sonner";
 interface ChatInterfaceProps {
   documentName: string;
   documentText: string;
+  language?: string;
 }
 
 const ChatInterface = ({ documentName, documentText }: ChatInterfaceProps) => {
