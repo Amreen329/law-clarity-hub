@@ -11,7 +11,7 @@ interface ChatInterfaceProps {
   language?: string;
 }
 
-const ChatInterface = ({ documentName, documentText }: ChatInterfaceProps) => {
+const ChatInterface = ({ documentName, documentText, language = "en" }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",

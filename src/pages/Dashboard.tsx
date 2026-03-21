@@ -219,27 +219,18 @@ const Dashboard = () => {
               <h3 className="flex items-center gap-2 font-display text-sm font-semibold text-foreground">
                 <Globe className="h-4 w-4 text-accent" /> Preferred Language
               </h3>
-              <div className="mt-3 flex rounded-lg border border-border bg-card p-0.5">
-                {(["en", "hi", "te"] as Language[]).map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => handleLanguageChange(lang)}
-                    className={`flex-1 rounded-md py-2 text-xs font-medium transition-all ${
-                      language === lang
-                        ? "bg-accent text-accent-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {languageLabels[lang]}
-                  </button>
-                ))}
+              <div className="mt-3">
+                <button
+                  onClick={() => setShowLanguagePopup(true)}
+                  className="flex w-full items-center justify-between rounded-lg border border-border bg-card px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  <span>{languageLabels[language]}</span>
+                  <Globe className="h-4 w-4 text-accent" />
+                </button>
               </div>
-              <button
-                onClick={() => setShowLanguagePopup(true)}
-                className="mt-2 w-full text-xs text-accent hover:underline"
-              >
-                Learn more about languages →
-              </button>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Tap to choose from 11 languages
+              </p>
             </div>
 
             <div className="rounded-xl border border-border bg-card p-5 shadow-soft">

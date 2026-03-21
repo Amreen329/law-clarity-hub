@@ -69,7 +69,7 @@ export async function streamChat({
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages, documentText: trimmedText, documentName }),
+    body: JSON.stringify({ messages, documentText: trimmedText, documentName, language }),
   });
 
   if (!resp.ok) {
