@@ -20,6 +20,14 @@ serve(async (req) => {
       en: "Respond entirely in English.",
       hi: "Respond entirely in Hindi (हिन्दी). All text including titles, explanations, questions, and answers must be in Hindi.",
       te: "Respond entirely in Telugu (తెలుగు). All text including titles, explanations, questions, and answers must be in Telugu.",
+      ta: "Respond entirely in Tamil (தமிழ்). All text must be in Tamil.",
+      kn: "Respond entirely in Kannada (ಕನ್ನಡ). All text must be in Kannada.",
+      ml: "Respond entirely in Malayalam (മലയാളം). All text must be in Malayalam.",
+      bn: "Respond entirely in Bengali (বাংলা). All text must be in Bengali.",
+      mr: "Respond entirely in Marathi (मराठी). All text must be in Marathi.",
+      gu: "Respond entirely in Gujarati (ગુજરાતી). All text must be in Gujarati.",
+      pa: "Respond entirely in Punjabi (ਪੰਜਾਬੀ). All text must be in Punjabi.",
+      ur: "Respond entirely in Urdu (اردو). All text must be in Urdu.",
     };
     const langPrompt = langInstructions[language] || langInstructions.en;
 
