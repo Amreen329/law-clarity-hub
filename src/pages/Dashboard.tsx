@@ -328,7 +328,7 @@ const Dashboard = () => {
                   <MessageSquare className="h-4 w-4 text-accent" />
                   <h3 className="font-display text-lg font-semibold text-foreground">Ask Questions</h3>
                 </div>
-                <ChatInterface documentName={currentDocName} documentText={currentDocText} />
+                <ChatInterface documentName={currentDocName} documentText={currentDocText} language={language} />
               </motion.div>
             ) : (
               <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center">
