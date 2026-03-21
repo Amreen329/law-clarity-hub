@@ -53,6 +53,9 @@ const ChatInterface = ({ documentName, documentText, language = "en" }: ChatInte
         messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
         documentText,
         documentName,
+        language,
+        documentText,
+        documentName,
         onDelta: upsertAssistant,
         onDone: () => setIsLoading(false),
         onError: (err) => {
