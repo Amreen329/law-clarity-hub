@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/Navbar";
+import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, FileText, Calendar, Tag, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -60,14 +60,12 @@ const BillDirectory = () => {
   });
 
   const handleAnalyze = (bill: Bill) => {
-    // Navigate to dashboard with bill data in state
     navigate("/dashboard", { state: { bill } });
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="container mx-auto px-4 pt-24 pb-12">
+    <DashboardLayout>
+      <div className="container mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">
@@ -172,7 +170,7 @@ const BillDirectory = () => {
           </div>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

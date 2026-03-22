@@ -1,8 +1,10 @@
+import { Navigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { FileText, MessageSquare, Globe, Shield, Zap, Users, ArrowRight, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/hooks/use-auth";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -15,7 +17,7 @@ const fadeUp = {
 const features = [
   { icon: FileText, title: "Document Analysis", desc: "Upload any bill, policy, or legal document and get instant plain-language summaries." },
   { icon: MessageSquare, title: "Ask Questions", desc: "Chat with your document. Ask anything and get clear, jargon-free answers." },
-  { icon: Globe, title: "Multi-Language", desc: "Get explanations in English, Hindi, or Telugu — making laws accessible to all." },
+  { icon: Globe, title: "Multi-Language", desc: "Get explanations in 11 Indian languages — making laws accessible to all." },
   { icon: Shield, title: "Citizen Impact", desc: "Understand exactly how a law affects you, your business, and your community." },
   { icon: Zap, title: "Instant Insights", desc: "Key highlights, important clauses, and bullet-point explanations in seconds." },
   { icon: Users, title: "For Everyone", desc: "Designed for ordinary citizens — no legal background required." },
@@ -28,6 +30,13 @@ const steps = [
 ];
 
 const Index = () => {
+  const { user, loading } = useAuth();
+
+  // Redirect authenticated users to dashboard
+  if (!loading && user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -66,7 +75,7 @@ const Index = () => {
             className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
             initial="hidden" animate="visible" variants={fadeUp} custom={3}
           >
-            <Link to="/dashboard">
+            <Link to="/auth">
               <Button size="lg" className="gap-2 bg-primary text-primary-foreground hover:bg-civic-navy-light">
                 Start Analyzing <ArrowRight className="h-4 w-4" />
               </Button>
@@ -82,7 +91,7 @@ const Index = () => {
             className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground"
             initial="hidden" animate="visible" variants={fadeUp} custom={4}
           >
-            {["100k+ token documents", "Multi-language support", "Free to use"].map((t) => (
+            {["100k+ token documents", "11 Indian languages", "Free to use"].map((t) => (
               <span key={t} className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-civic-teal" /> {t}
               </span>
@@ -161,7 +170,7 @@ const Index = () => {
             <p className="mt-4 text-primary-foreground/80">
               Upload a document now and get clarity in minutes.
             </p>
-            <Link to="/dashboard">
+            <Link to="/auth">
               <Button size="lg" className="mt-6 bg-secondary text-secondary-foreground hover:bg-civic-amber-light">
                 Get Started Free <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
