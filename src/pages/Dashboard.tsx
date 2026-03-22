@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import Navbar from "@/components/Navbar";
+import DashboardLayout from "@/components/DashboardLayout";
 import DocumentUpload from "@/components/DocumentUpload";
 import AnalysisProgress from "@/components/AnalysisProgress";
 import AnalysisResults from "@/components/AnalysisResults";
@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import type { DocumentAnalysis, Language } from "@/lib/analysisTypes";
 import { languageLabels } from "@/lib/analysisTypes";
-import { FileText, Clock, MessageSquare, ArrowLeftRight, Trash2, Globe, Volume2, BookOpen } from "lucide-react";
+import { FileText, Clock, MessageSquare, ArrowLeftRight, Trash2, Globe, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,18 @@ const Dashboard = () => {
             text: d.document_text,
           }))
         );
+      }
+
+      // Load preferred language from latest analysis
+      const { data: latestAnalysis } = await supabase
+        .from("analyses")
+        .select("language")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latestAnalysis?.language) {
+        setLanguage(latestAnalysis.language as Language);
       }
     };
     loadHistory();
@@ -206,15 +218,14 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <DashboardLayout>
       <OnboardingGuide forceShow={showOnboarding} onDismiss={() => setShowOnboarding(false)} />
 
-      <div className="container mx-auto px-4 pt-20 pb-12">
+      <div className="container mx-auto px-4 py-6">
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-          {/* Sidebar */}
+          {/* Sidebar content */}
           <aside className="space-y-4">
-            {/* Language Selector - Highlighted */}
+            {/* Language Selector */}
             <div className="rounded-xl border-2 border-accent/30 bg-accent/5 p-4 shadow-soft">
               <h3 className="flex items-center gap-2 font-display text-sm font-semibold text-foreground">
                 <Globe className="h-4 w-4 text-accent" /> Preferred Language
@@ -318,10 +329,11 @@ const Dashboard = () => {
                   onLanguageChange={handleLanguageChange}
                 />
 
-                {/* Text-to-Speech */}
+                {/* Text-to-Speech with language */}
                 <TextToSpeech
                   text={currentAnalysis.summary}
                   title="🔊 Listen to Summary"
+                  language={language}
                 />
 
                 <div className="flex items-center gap-2">
@@ -355,7 +367,7 @@ const Dashboard = () => {
         currentLanguage={language}
         onLanguageChange={handleLanguageChange}
       />
-    </div>
+    </DashboardLayout>
   );
 };
 

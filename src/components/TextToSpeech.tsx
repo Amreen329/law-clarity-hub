@@ -2,20 +2,21 @@ import { useState, useRef, useEffect } from "react";
 import { Volume2, VolumeX, Pause, Play, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import type { Language } from "@/lib/analysisTypes";
+
+// Map our language codes to BCP 47 lang tags for speech synthesis
+const langToBcp47: Record<string, string> = {
+  en: "en", hi: "hi", te: "te", ta: "ta", kn: "kn",
+  ml: "ml", bn: "bn", mr: "mr", gu: "gu", pa: "pa", ur: "ur",
+};
 
 interface TextToSpeechProps {
   text: string;
   title?: string;
+  language?: Language;
 }
 
-const TextToSpeech = ({ text, title }: TextToSpeechProps) => {
+const TextToSpeech = ({ text, title, language = "en" }: TextToSpeechProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [rate, setRate] = useState(1);
@@ -26,15 +27,17 @@ const TextToSpeech = ({ text, title }: TextToSpeechProps) => {
   useEffect(() => {
     const loadVoices = () => {
       const available = speechSynthesis.getVoices();
-      // Prefer English voices
-      const english = available.filter((v) => v.lang.startsWith("en"));
-      const hindi = available.filter((v) => v.lang.startsWith("hi"));
-      const telugu = available.filter((v) => v.lang.startsWith("te"));
-      setVoices([...english, ...hindi, ...telugu, ...available.filter(
-        (v) => !v.lang.startsWith("en") && !v.lang.startsWith("hi") && !v.lang.startsWith("te")
-      )]);
-      if (english.length > 0 && !selectedVoice) {
-        setSelectedVoice(english[0].name);
+      setVoices(available);
+
+      // Auto-select a voice matching the current language
+      const bcp = langToBcp47[language] || "en";
+      const match = available.find((v) => v.lang.startsWith(bcp));
+      if (match) {
+        setSelectedVoice(match.name);
+      } else if (available.length > 0 && !selectedVoice) {
+        // Fallback to first English voice
+        const en = available.find((v) => v.lang.startsWith("en"));
+        setSelectedVoice(en?.name || available[0].name);
       }
     };
 
@@ -44,7 +47,7 @@ const TextToSpeech = ({ text, title }: TextToSpeechProps) => {
       speechSynthesis.removeEventListener("voiceschanged", loadVoices);
       speechSynthesis.cancel();
     };
-  }, []);
+  }, [language]);
 
   const stripMarkdown = (md: string) =>
     md
@@ -68,6 +71,10 @@ const TextToSpeech = ({ text, title }: TextToSpeechProps) => {
     const cleanText = stripMarkdown(text);
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.rate = rate;
+
+    // Set the language on the utterance itself
+    const bcp = langToBcp47[language] || "en";
+    utterance.lang = bcp;
 
     const voice = voices.find((v) => v.name === selectedVoice);
     if (voice) utterance.voice = voice;
@@ -99,6 +106,13 @@ const TextToSpeech = ({ text, title }: TextToSpeechProps) => {
     setIsPlaying(false);
     setIsPaused(false);
   };
+
+  // Filter voices to show relevant ones for the selected language first
+  const bcp = langToBcp47[language] || "en";
+  const relevantVoices = [
+    ...voices.filter((v) => v.lang.startsWith(bcp)),
+    ...voices.filter((v) => !v.lang.startsWith(bcp)),
+  ].slice(0, 15);
 
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-soft">
@@ -138,21 +152,6 @@ const TextToSpeech = ({ text, title }: TextToSpeechProps) => {
         />
         <span className="text-xs font-medium text-foreground">{rate}x</span>
       </div>
-
-      {voices.length > 0 && (
-        <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-          <SelectTrigger className="h-8 w-[140px] text-xs">
-            <SelectValue placeholder="Voice" />
-          </SelectTrigger>
-          <SelectContent>
-            {voices.slice(0, 15).map((v) => (
-              <SelectItem key={v.name} value={v.name} className="text-xs">
-                {v.name.length > 20 ? v.name.slice(0, 20) + "…" : v.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
     </div>
   );
 };

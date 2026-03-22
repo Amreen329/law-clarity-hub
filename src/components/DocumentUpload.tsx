@@ -32,6 +32,8 @@ const LEGAL_KEYWORDS = [
   "state government", "union territory", "preamble", "schedule",
   "chapter", "part", "article", "rule", "order", "decree", "tribunal",
   "commission", "authority", "board", "council", "committee",
+  "the indian", "republic of india", "supreme court", "high court",
+  "notification no", "g.s.r", "s.o.", "extraordinary",
 ];
 
 function isLikelyGovernmentDocument(fileName: string, text?: string): boolean {
@@ -40,7 +42,7 @@ function isLikelyGovernmentDocument(fileName: string, text?: string): boolean {
   if (LEGAL_KEYWORDS.some((kw) => name.includes(kw))) return true;
   // If we have text content, check that too
   if (text) {
-    const lower = text.toLowerCase().slice(0, 5000); // Check first 5000 chars
+    const lower = text.toLowerCase().slice(0, 8000); // Check first 8000 chars
     const matchCount = LEGAL_KEYWORDS.filter((kw) => lower.includes(kw)).length;
     if (matchCount >= 3) return true;
   }
@@ -51,6 +53,7 @@ const DocumentUpload = ({ onFileSelect, isAnalyzing }: DocumentUploadProps) => {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectMessage, setRejectMessage] = useState("");
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -58,32 +61,75 @@ const DocumentUpload = ({ onFileSelect, isAnalyzing }: DocumentUploadProps) => {
     setDragActive(e.type === "dragenter" || e.type === "dragover");
   }, []);
 
+  const showRejection = (message: string) => {
+    setRejectMessage(message);
+    setShowRejectDialog(true);
+  };
+
   const validateAndSetFile = (file: File) => {
     const ext = "." + file.name.split(".").pop()?.toLowerCase();
+
+    // Step 1: Check file type
     if (!ACCEPTED_TYPES.includes(file.type) && !ACCEPTED_EXTENSIONS.includes(ext)) {
-      setShowRejectDialog(true);
+      showRejection("Document upload error. The file format is not supported. Please upload a PDF, TXT, or DOCX file containing a proper government bill or legislative document.");
       return;
     }
-    // Quick filename check
+
+    // Step 2: For text files, read content and validate
+    if (file.type === "text/plain" || ext === ".txt") {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        if (!isLikelyGovernmentDocument(file.name, text)) {
+          showRejection("Document upload error. This does not appear to be a government bill or legislative document. Please upload a proper bill, act, or policy document.");
+        } else {
+          setSelectedFile(file);
+        }
+      };
+      reader.readAsText(file.slice(0, 15000));
+      return;
+    }
+
+    // Step 3: For DOCX files, try to extract some text
+    if (ext === ".docx" || file.type === ACCEPTED_TYPES[2]) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const arrayBuffer = e.target?.result as ArrayBuffer;
+        const text = new TextDecoder().decode(new Uint8Array(arrayBuffer));
+        // Extract text from XML tags
+        const matches = text.match(/<w:t[^>]*>([^<]+)<\/w:t>/g);
+        const extractedText = matches
+          ? matches.map((m) => m.replace(/<[^>]+>/g, "")).join(" ")
+          : "";
+
+        if (!isLikelyGovernmentDocument(file.name, extractedText)) {
+          showRejection("Document upload error. This does not appear to be a government bill or legislative document. Please upload a proper bill, act, or policy document.");
+        } else {
+          setSelectedFile(file);
+        }
+      };
+      reader.readAsArrayBuffer(file.slice(0, 50000));
+      return;
+    }
+
+    // Step 4: For PDF, check filename (content will be validated by AI after extraction)
     if (!isLikelyGovernmentDocument(file.name)) {
-      // For text files, we can read a snippet
-      if (file.type === "text/plain") {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const text = e.target?.result as string;
-          if (!isLikelyGovernmentDocument(file.name, text)) {
-            setShowRejectDialog(true);
-          } else {
-            setSelectedFile(file);
-          }
-        };
-        reader.readAsText(file.slice(0, 10000));
-        return;
-      }
-      // For PDF/DOCX, accept with filename check only (AI will validate content)
-      setSelectedFile(file);
+      // Read PDF bytes to check for text patterns
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = new TextDecoder("utf-8", { fatal: false }).decode(
+          new Uint8Array(e.target?.result as ArrayBuffer)
+        );
+        if (!isLikelyGovernmentDocument(file.name, text)) {
+          showRejection("Document upload error. This does not appear to be a government bill or legislative document. Please upload a proper bill, act, or policy document.");
+        } else {
+          setSelectedFile(file);
+        }
+      };
+      reader.readAsArrayBuffer(file.slice(0, 50000));
       return;
     }
+
     setSelectedFile(file);
   };
 
@@ -98,6 +144,8 @@ const DocumentUpload = ({ onFileSelect, isAnalyzing }: DocumentUploadProps) => {
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) validateAndSetFile(file);
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
   };
 
   const handleAnalyze = () => {
@@ -177,18 +225,14 @@ const DocumentUpload = ({ onFileSelect, isAnalyzing }: DocumentUploadProps) => {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 mb-3">
               <AlertTriangle className="h-7 w-7 text-destructive" />
             </div>
-            <DialogTitle className="text-center">Document Not Accepted</DialogTitle>
+            <DialogTitle className="text-center">Document Upload Error</DialogTitle>
             <DialogDescription className="text-center">
-              LegisAI only accepts official <strong>government bills, acts, and policies</strong> that
-              have been introduced or approved by state or central legislatures.
-              <br /><br />
-              Personal documents, contracts, academic papers, and other non-legislative files
-              are not supported.
+              {rejectMessage || "Document upload error. Please try to upload a proper government bill or legislative document."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-center">
             <Button onClick={() => setShowRejectDialog(false)}>
-              Got it, I'll upload a valid bill
+              Upload a Valid Document
             </Button>
           </DialogFooter>
         </DialogContent>
