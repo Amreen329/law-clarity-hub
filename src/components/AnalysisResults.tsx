@@ -172,6 +172,7 @@ ${analysis.faq.map((f) => `**Q: ${f.question}**\nA: ${f.answer}`).join("\n\n")}`
           <TextToSpeech
             text={simplified ? analysis.simplifiedSummary : analysis.summary}
             title="🔊 Listen to this summary"
+            language={language}
           />
         </TabsContent>
 
