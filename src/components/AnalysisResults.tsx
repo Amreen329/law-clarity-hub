@@ -242,6 +242,7 @@ ${analysis.faq.map((f) => `**Q: ${f.question}**\nA: ${f.answer}`).join("\n\n")}`
           <TextToSpeech
             text={analysis.citizenImpact}
             title="🔊 Listen to citizen impact"
+            language={language}
           />
         </TabsContent>
 

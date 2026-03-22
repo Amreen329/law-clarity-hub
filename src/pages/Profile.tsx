@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/Navbar";
+import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Save, Loader2, ArrowLeft, Globe } from "lucide-react";
+import { Save, Loader2, Globe } from "lucide-react";
 import type { Language } from "@/lib/analysisTypes";
 import { languageLabels } from "@/lib/analysisTypes";
 import { toast } from "sonner";
@@ -36,7 +36,6 @@ const Profile = () => {
       } else {
         setFullName(user.user_metadata?.full_name || "");
       }
-      // Load language preference from latest analysis or default
       const { data: analysis } = await supabase
         .from("analyses")
         .select("language")
@@ -69,23 +68,17 @@ const Profile = () => {
 
   if (fetching) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <DashboardLayout>
         <div className="flex items-center justify-center pt-32">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="container mx-auto max-w-lg px-4 pt-24 pb-12">
-        <Button variant="ghost" size="sm" className="mb-4 gap-2" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4" /> Back
-        </Button>
-
+    <DashboardLayout>
+      <div className="container mx-auto max-w-lg px-4 py-8">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -153,7 +146,7 @@ const Profile = () => {
           </div>
         </motion.div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
