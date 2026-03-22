@@ -1,4 +1,5 @@
 📚 Law Clarity Hub
+
 🚀 About
 
 Law Clarity Hub is a web-based AI application built using Lovable to simplify legal information. It helps users understand complex laws and legal documents through clear explanations and intelligent summarization.
